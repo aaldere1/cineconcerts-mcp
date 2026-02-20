@@ -12,6 +12,8 @@ https://cineconcerts.digital/mcp/
 
 No API key required. No authentication. Just connect and start searching.
 
+Rate limited to 60 requests/minute per IP to keep things fair.
+
 ---
 
 ## Setup Instructions
@@ -204,6 +206,18 @@ Each event includes:
 | **Show Code** | HP3 |
 | **Poster** | Link to event poster image |
 | **Tickets** | Direct link to purchase tickets |
+
+## Rate Limits
+
+The server is rate limited to protect infrastructure costs:
+
+| Limit | Value |
+|-------|-------|
+| **Requests per minute** | 60 per IP |
+| **Max concurrent sessions** | 100 |
+| **Session timeout** | 30 minutes idle |
+
+Standard `RateLimit` headers are included in every response. Normal usage (even active conversations with many queries) will never hit these limits.
 
 ## How It Works
 
