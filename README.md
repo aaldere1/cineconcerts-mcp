@@ -2,23 +2,35 @@
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that provides real-time access to CineConcerts film-concert event data. Search for Harry Potter, Godfather, Gladiator, and other film-concert experiences happening worldwide.
 
-Works with **Claude**, **ChatGPT**, **Cursor**, and any MCP-compatible client.
+Works with **Claude**, **ChatGPT**, **Cursor**, **VS Code**, **Windsurf**, and any MCP-compatible client.
 
-## Hosted Server
-
-A public instance is running and ready to use — no setup required:
+## Server URL
 
 ```
 https://cineconcerts.digital/mcp/
 ```
 
-Health check: https://cineconcerts.digital/mcp/health
+No API key required. No authentication. Just connect and start searching.
 
-## Quick Start
+---
+
+## Setup Instructions
 
 ### Claude Code
 
-Add to your Claude Code config (`.claude.json` or via settings):
+Run this in your terminal:
+
+```bash
+claude mcp add --transport http cineconcerts https://cineconcerts.digital/mcp/
+```
+
+To make it available across all your projects:
+
+```bash
+claude mcp add --transport http --scope user cineconcerts https://cineconcerts.digital/mcp/
+```
+
+To share with your team, add a `.mcp.json` file to your project root:
 
 ```json
 {
@@ -31,23 +43,33 @@ Add to your Claude Code config (`.claude.json` or via settings):
 }
 ```
 
+Verify with `claude mcp list` or type `/mcp` inside Claude Code.
+
 ### Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+1. Open **Settings** (gear icon) > **Connectors**
+2. Click **"Add custom connector"**
+3. Paste the URL: `https://cineconcerts.digital/mcp/`
+4. Click **"Add"**
 
-```json
-{
-  "mcpServers": {
-    "cineconcerts": {
-      "url": "https://cineconcerts.digital/mcp/"
-    }
-  }
-}
-```
+Requires a Pro, Max, Team, or Enterprise plan.
+
+### ChatGPT
+
+1. Go to **Settings > Apps & Connectors > Advanced settings**
+2. Toggle **Developer Mode** on
+3. Go to **Settings > Connectors > Create**
+4. Enter:
+   - **Name:** `CineConcerts`
+   - **URL:** `https://cineconcerts.digital/mcp/`
+5. Click **Create**
+6. In any chat, click **+** > **More** > select **CineConcerts**
+
+Requires a Pro, Team, Enterprise, or Edu plan.
 
 ### Cursor
 
-Add to your Cursor MCP settings:
+Add to `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` for global):
 
 ```json
 {
@@ -59,9 +81,72 @@ Add to your Cursor MCP settings:
 }
 ```
 
-### ChatGPT (OpenAI Apps)
+Or go to **Cursor Settings** (Cmd+,) and search for "MCP" to add it via the UI.
 
-The server includes all required tool annotations (`readOnlyHint`, `destructiveHint`, `openWorldHint`) for OpenAI Apps SDK compatibility. Point the app at the hosted URL to register.
+### VS Code + GitHub Copilot
+
+Requires VS Code 1.99+ with the GitHub Copilot extension.
+
+Add to `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "cineconcerts": {
+      "type": "http",
+      "url": "https://cineconcerts.digital/mcp/"
+    }
+  }
+}
+```
+
+Note: VS Code uses `"servers"` as the top-level key (not `"mcpServers"`). Tools are available in Copilot's **Agent mode**.
+
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "cineconcerts": {
+      "serverUrl": "https://cineconcerts.digital/mcp/"
+    }
+  }
+}
+```
+
+Note: Windsurf uses `"serverUrl"` (not `"url"`).
+
+### Cline
+
+Open Cline's MCP panel > **Remote Servers** tab > **Edit Configuration**, then add:
+
+```json
+{
+  "mcpServers": {
+    "cineconcerts": {
+      "url": "https://cineconcerts.digital/mcp/",
+      "disabled": false
+    }
+  }
+}
+```
+
+### Continue
+
+Add to `.continue/config.yaml` in your workspace:
+
+```yaml
+mcpServers:
+  - name: cineconcerts
+    type: streamable-http
+    url: https://cineconcerts.digital/mcp/
+```
+
+Tools are available in Continue's **Agent mode**.
+
+---
 
 ## Tools
 
@@ -70,48 +155,46 @@ The server includes all required tool annotations (`readOnlyHint`, `destructiveH
 Search for events by keyword — film title, city, venue, or any text.
 
 ```
-Input:  { "query": "Harry Potter" }
-Input:  { "query": "Prague" }
-Input:  { "query": "Gladiator" }
+"Find Harry Potter concerts"
+"Any shows in Prague?"
+"Gladiator in concert"
 ```
 
 ### `find_nearby_shows`
 
-Find events near a location using geocoding and geo-search.
+Find events near a location. Accepts city names, addresses, or landmarks.
 
 ```
-Input:  { "location": "New York" }
-Input:  { "location": "London", "radius_km": 200 }
-Input:  { "location": "Tokyo Tower" }
+"Shows near New York"
+"Concerts within 200km of London"
+"Anything near Tokyo Tower?"
 ```
-
-Geocodes the location via [Nominatim](https://nominatim.openstreetmap.org/), then searches Algolia within the given radius (default 500km).
 
 ### `list_upcoming_shows`
 
-Browse all upcoming events.
+Browse all upcoming events (up to 60).
 
 ```
-Input:  { "limit": 10 }
-Input:  {}           // defaults to 20 results
+"What CineConcerts shows are coming up?"
+"List the next 10 events"
 ```
-
-Returns up to 60 events.
 
 ### `get_show_details`
 
 Get full details for a specific show by its show code.
 
 ```
-Input:  { "show_code": "HP3" }
-Input:  { "show_code": "HP8" }
+"Get details for show HP3"
+"Tell me about HP8"
 ```
 
-Returns all available fields: title, date, venue, city, country, state, poster image, ticket link, pre-sale status, and more.
+Returns title, date, venue, city, country, poster image, ticket link, pre-sale status, and more.
 
-## Response Format
+---
 
-Each event in the response includes:
+## What You Get Back
+
+Each event includes:
 
 | Field | Example |
 |-------|---------|
@@ -119,7 +202,7 @@ Each event in the response includes:
 | **Date** | 03/06/2026 to 03/07/2026 |
 | **Location** | Popejoy Hall, Albuquerque, New Mexico, United States |
 | **Show Code** | HP3 |
-| **Poster** | URL to event poster image |
+| **Poster** | Link to event poster image |
 | **Tickets** | Direct link to purchase tickets |
 
 ## How It Works
