@@ -49,7 +49,7 @@ app.get("/health", (_req, res) => {
 });
 
 // MCP Streamable HTTP — POST (JSON-RPC messages)
-app.post("/mcp", async (req, res) => {
+app.post("/", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   try {
@@ -99,7 +99,7 @@ app.post("/mcp", async (req, res) => {
 });
 
 // MCP Streamable HTTP — GET (SSE notifications)
-app.get("/mcp", async (req, res) => {
+app.get("/", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   if (!sessionId || !transports[sessionId]) {
     res.status(400).send("Invalid or missing session ID");
@@ -109,7 +109,7 @@ app.get("/mcp", async (req, res) => {
 });
 
 // MCP Streamable HTTP — DELETE (session termination)
-app.delete("/mcp", async (req, res) => {
+app.delete("/", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   if (!sessionId || !transports[sessionId]) {
     res.status(400).send("Invalid or missing session ID");
@@ -121,7 +121,7 @@ app.delete("/mcp", async (req, res) => {
 app.listen(PORT, HOST, () => {
   console.log(`CineConcerts MCP server listening on ${HOST}:${PORT}`);
   console.log(`Health: http://${HOST}:${PORT}/health`);
-  console.log(`MCP endpoint: http://${HOST}:${PORT}/mcp`);
+  console.log(`MCP endpoint: http://${HOST}:${PORT}/`);
 });
 
 process.on("SIGINT", async () => {

@@ -9,7 +9,7 @@ Works with **Claude**, **ChatGPT**, **Cursor**, and any MCP-compatible client.
 A public instance is running and ready to use — no setup required:
 
 ```
-https://cineconcerts.digital/mcp/mcp
+https://cineconcerts.digital/mcp/
 ```
 
 Health check: https://cineconcerts.digital/mcp/health
@@ -25,7 +25,7 @@ Add to your Claude Code config (`.claude.json` or via settings):
   "mcpServers": {
     "cineconcerts": {
       "type": "http",
-      "url": "https://cineconcerts.digital/mcp/mcp"
+      "url": "https://cineconcerts.digital/mcp/"
     }
   }
 }
@@ -39,7 +39,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "cineconcerts": {
-      "url": "https://cineconcerts.digital/mcp/mcp"
+      "url": "https://cineconcerts.digital/mcp/"
     }
   }
 }
@@ -53,7 +53,7 @@ Add to your Cursor MCP settings:
 {
   "mcpServers": {
     "cineconcerts": {
-      "url": "https://cineconcerts.digital/mcp/mcp"
+      "url": "https://cineconcerts.digital/mcp/"
     }
   }
 }
@@ -192,10 +192,12 @@ src/
 
 Uses [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports) (the current MCP transport standard):
 
-- `POST /mcp` — JSON-RPC messages (tool calls, initialization)
-- `GET /mcp` — SSE stream for server-to-client notifications
-- `DELETE /mcp` — session termination
+- `POST /` — JSON-RPC messages (tool calls, initialization)
+- `GET /` — SSE stream for server-to-client notifications
+- `DELETE /` — session termination
 - `GET /health` — health check endpoint
+
+When deployed behind a reverse proxy (e.g. nginx at `/mcp/`), the public URL becomes `https://your-domain.com/mcp/`.
 
 Sessions are managed via the `Mcp-Session-Id` header.
 
