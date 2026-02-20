@@ -122,88 +122,13 @@ Each event in the response includes:
 | **Poster** | URL to event poster image |
 | **Tickets** | Direct link to purchase tickets |
 
-## Self-Hosting
+## How It Works
 
-### Prerequisites
+The server connects to the same public event database that powers [cineconcerts.com](https://www.cineconcerts.com), the CineConcerts mobile app, and the interactive concert map. All data is public and read-only — the MCP server simply provides an AI-friendly interface to it.
 
-- Node.js 18+
-- An Algolia account with access to the `knack_events` index
+Built with TypeScript, Express, and the [official MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk) using [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports) transport. Location search is powered by [Nominatim](https://nominatim.openstreetmap.org/) geocoding.
 
-### Setup
-
-```bash
-git clone https://github.com/aaldere1/cineconcerts-mcp.git
-cd cineconcerts-mcp
-npm install
-```
-
-Create a `.env` file:
-
-```env
-ALGOLIA_APP_ID=your_app_id
-ALGOLIA_API_KEY=your_search_api_key
-PORT=8421
-HOST=127.0.0.1
-```
-
-### Development
-
-```bash
-npm run dev          # tsx watch mode with hot reload
-```
-
-### Production
-
-```bash
-npm run build        # compile TypeScript to dist/
-npm start            # run compiled server
-```
-
-Or with PM2:
-
-```bash
-pm2 start dist/index.js --name cc-mcp
-```
-
-## Architecture
-
-```
-src/
-├── index.ts              # Express server + Streamable HTTP transport
-├── tools/
-│   ├── search.ts         # search_shows — keyword search
-│   ├── nearby.ts         # find_nearby_shows — geo search
-│   ├── list.ts           # list_upcoming_shows — browse all
-│   └── details.ts        # get_show_details — single show lookup
-└── services/
-    ├── algolia.ts        # Algolia client, queries, response formatting
-    └── geocode.ts        # Nominatim geocoding for location search
-```
-
-### Stack
-
-- **TypeScript** + **Express** — HTTP server
-- **@modelcontextprotocol/sdk** — official MCP SDK with Streamable HTTP transport
-- **algoliasearch** — Algolia client for the `knack_events` index
-- **Zod** — input schema validation (required by MCP SDK)
-- **Nominatim** — free geocoding for the `find_nearby_shows` tool
-
-### Transport
-
-Uses [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports) (the current MCP transport standard):
-
-- `POST /` — JSON-RPC messages (tool calls, initialization)
-- `GET /` — SSE stream for server-to-client notifications
-- `DELETE /` — session termination
-- `GET /health` — health check endpoint
-
-When deployed behind a reverse proxy (e.g. nginx at `/mcp/`), the public URL becomes `https://your-domain.com/mcp/`.
-
-Sessions are managed via the `Mcp-Session-Id` header.
-
-## Data Source
-
-Event data comes from the **Algolia `knack_events` index**, the same index that powers [cineconcerts.com](https://www.cineconcerts.com), the CineConcerts mobile app, and the interactive concert map. The data is public and read-only.
+## Events
 
 Currently ~60 active events including:
 
