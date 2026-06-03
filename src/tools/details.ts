@@ -12,7 +12,7 @@ export function registerDetailsTool(server: McpServer) {
       inputSchema: {
         show_code: z
           .string()
-          .describe("The show code identifier (e.g. HP4-NYC-2026)"),
+          .describe("The show code identifier (e.g. HP3, HP4)"),
       },
       annotations: {
         title: "Get Show Details",

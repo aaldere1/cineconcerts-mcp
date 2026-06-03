@@ -3,7 +3,6 @@ module.exports = {
     {
       name: "cc-mcp",
       script: "dist/index.js",
-      cwd: "/root/cineconcerts-mcp",
       env: {
         NODE_ENV: "production",
         PORT: 8421,

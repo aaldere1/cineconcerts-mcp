@@ -2,7 +2,7 @@
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that provides real-time access to CineConcerts film-concert event data. Search for Harry Potter, Godfather, Gladiator, and other film-concert experiences happening worldwide.
 
-Works with **Claude**, **ChatGPT**, **Cursor**, **VS Code**, **Windsurf**, and any MCP-compatible client.
+Works with **Claude Code**, **Claude Desktop**, **Codex**, **ChatGPT**, **Cursor**, **VS Code**, **Windsurf**, and any MCP-compatible client.
 
 ## Server URL
 
@@ -46,6 +46,23 @@ To share with your team, add a `.mcp.json` file to your project root:
 ```
 
 Verify with `claude mcp list` or type `/mcp` inside Claude Code.
+
+### Codex CLI
+
+Run this in your terminal:
+
+```bash
+codex mcp add cineconcerts --url https://cineconcerts.digital/mcp/
+```
+
+Or add it to `~/.codex/config.toml` directly:
+
+```toml
+[mcp_servers.cineconcerts]
+url = "https://cineconcerts.digital/mcp/"
+```
+
+Verify with `codex mcp list`.
 
 ### Claude Desktop
 
