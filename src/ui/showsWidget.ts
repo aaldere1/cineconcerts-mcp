@@ -104,6 +104,20 @@ export const showsWidgetHtml = `<!DOCTYPE html>
       let source = null;
       let shows = [];
 
+      function safeHttpUrl(value) {
+        if (typeof value !== "string" || !value) return null;
+        try {
+          const parsed = new URL(value, window.location.href);
+          // shows[] arrives from the model, not straight from Algolia, so a
+          // manipulated tool call could otherwise put javascript: on an href.
+          return parsed.protocol === "https:" || parsed.protocol === "http:"
+            ? parsed.href
+            : null;
+        } catch {
+          return null;
+        }
+      }
+
       function showLocation(show) {
         if (show && typeof show.location === "string" && show.location.length) {
           return show.location;
@@ -153,10 +167,11 @@ export const showsWidgetHtml = `<!DOCTYPE html>
           li.appendChild(date);
           li.appendChild(location);
 
-          if (show.ticketUrl) {
+          const ticketHref = safeHttpUrl(show.ticketUrl);
+          if (ticketHref) {
             const link = document.createElement("a");
             link.className = "cta";
-            link.href = show.ticketUrl;
+            link.href = ticketHref;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
             link.textContent = "View Tickets";
