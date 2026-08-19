@@ -10,6 +10,8 @@ import { registerSearchTool } from "./tools/search.js";
 import { registerNearbyTool } from "./tools/nearby.js";
 import { registerListTool } from "./tools/list.js";
 import { registerDetailsTool } from "./tools/details.js";
+import { registerRenderUpcomingShowsWidgetTool } from "./tools/renderWidget.js";
+import { SHOWS_WIDGET_URI, showsWidgetHtml } from "./ui/showsWidget.js";
 
 const PORT = parseInt(process.env.PORT || "8421", 10);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -64,10 +66,34 @@ function createServer(): McpServer {
     version: "1.0.0",
   });
 
+  server.registerResource(
+    "shows-widget",
+    SHOWS_WIDGET_URI,
+    {
+      title: "Shows Widget",
+      description: "Renders upcoming CineConcerts events in an embeddable widget.",
+    },
+    async () => ({
+      contents: [
+        {
+          uri: SHOWS_WIDGET_URI,
+          mimeType: "text/html;profile=mcp-app",
+          text: showsWidgetHtml,
+          _meta: {
+            ui: {
+              prefersBorder: true,
+            },
+          },
+        },
+      ],
+    })
+  );
+
   registerSearchTool(server);
   registerNearbyTool(server);
   registerListTool(server);
   registerDetailsTool(server);
+  registerRenderUpcomingShowsWidgetTool(server);
 
   return server;
 }
@@ -99,6 +125,7 @@ app.get("/health", (_req, res) => {
       "find_nearby_shows",
       "list_upcoming_shows",
       "get_show_details",
+      "render_upcoming_shows_widget",
     ],
   });
 });
