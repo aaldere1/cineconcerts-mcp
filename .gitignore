@@ -4,3 +4,4 @@ dist/
 CLAUDE.md
 .DS_Store
 scripts/deploy.env
+.planning/

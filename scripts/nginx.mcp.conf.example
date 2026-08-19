@@ -1,0 +1,47 @@
+# Reference reverse-proxy config for cineconcerts-mcp.
+#
+# This lives in the repo because the proxy layer, not the app, is where this
+# server has historically broken for third parties. Drop these two blocks into
+# the TLS server block for the host.
+#
+#   nginx -t && systemctl reload nginx
+#
+# Keep backups OUT of sites-enabled/ — that directory is glob-included, so a
+# `default.bak` file is parsed as live config and creates a duplicate server
+# block for the same server_name. Whichever file sorts first wins, which means a
+# stale copy can silently take over and undo everything below.
+
+# Exact match, so a client that drops the trailing slash is served directly.
+# Without this nginx auto-301s /mcp -> /mcp/, and HTTP clients downgrade POST to
+# GET when following a 301: the initialize body is dropped and the handshake
+# fails with "No valid session". Cursor and python-httpx both normalise the
+# slash away, so for them the published URL was simply broken.
+location = /mcp {
+	proxy_pass http://127.0.0.1:8421/;
+	proxy_http_version 1.1;
+	proxy_set_header Host $host;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Proto $scheme;
+	proxy_set_header Connection "";
+	proxy_buffering off;
+	proxy_cache off;
+	# MCP holds an idle SSE stream open for server-initiated messages.
+	# The 60s default would cut it every minute and make clients reconnect.
+	proxy_read_timeout 3600s;
+	proxy_send_timeout 3600s;
+}
+
+location /mcp/ {
+	proxy_pass http://127.0.0.1:8421/;
+	proxy_http_version 1.1;
+	proxy_set_header Host $host;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Proto $scheme;
+	proxy_set_header Connection "";
+	proxy_buffering off;
+	proxy_cache off;
+	proxy_read_timeout 3600s;
+	proxy_send_timeout 3600s;
+}

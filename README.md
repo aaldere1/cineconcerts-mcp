@@ -18,7 +18,7 @@ https://cineconcerts.digital/mcp/
 
 **No API key. No signup. No config file required.** Just connect and start asking.
 
-<sub>Both `…/mcp` and `…/mcp/` work. If your client reports `failed_to_load` or 0 tools, it must accept **both** `application/json` and `text/event-stream` — that is required by the Streamable HTTP transport, and a client sending only `application/json` gets a 406.</sub>
+<sub>Both `…/mcp` and `…/mcp/` work, with or without the trailing slash. The server answers plain JSON or SSE depending on what your client asks for, so no special `Accept` or `Content-Type` handling is needed on your side.</sub>
 
 </div>
 
@@ -80,6 +80,7 @@ Your assistant turns that into a clean, conversational answer — with live link
 - [Tools](#-tools)
 - [What you get back](#-what-you-get-back)
 - [Rate limits](#-rate-limits)
+- [Troubleshooting](#-troubleshooting)
 - [How it works](#-how-it-works)
 - [Events catalog](#-events-catalog)
 - [FAQ](#-faq)
@@ -154,6 +155,10 @@ url = "https://cineconcerts.digital/mcp/"
 ```
 
 Verify with `codex mcp list`.
+
+> On older Codex builds, URL-based servers are ignored unless the RMCP client is
+> enabled. If `codex mcp list` doesn't show it, upgrade Codex or add
+> `experimental_use_rmcp_client = true` at the top level of `~/.codex/config.toml`.
 
 </details>
 
@@ -263,12 +268,16 @@ Open Cline's MCP panel → **Remote Servers** → **Edit Configuration**:
 {
   "mcpServers": {
     "cineconcerts": {
+      "type": "streamableHttp",
       "url": "https://cineconcerts.digital/mcp/",
       "disabled": false
     }
   }
 }
 ```
+
+> ⚠️ Cline needs `"type": "streamableHttp"` — camelCase, no hyphen. Leave it out
+> and Cline falls back to the legacy SSE transport, which this server does not speak.
 
 </details>
 
@@ -366,11 +375,53 @@ Generous limits keep the service fast and free for everyone. Normal usage — ev
 
 | Limit | Value |
 |-------|-------|
-| **Requests / minute** | 60 per IP |
-| **Concurrent sessions** | 100 |
+| **Requests / minute** | 240 per IP |
+| **Concurrent sessions** | 500 |
 | **Idle session timeout** | 30 minutes |
 
 Standard [`RateLimit`](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) headers (draft-7) are included on every response, so well-behaved clients can self-pace.
+
+---
+
+## 🩺 Troubleshooting
+
+The server is deliberately forgiving — it accepts any `Accept` header, any
+`Content-Type`, either URL form, and hands back a session even if your client
+still has a stale one cached. If something still isn't working:
+
+**1. Check the server is up**
+
+```bash
+curl https://cineconcerts.digital/mcp/health
+```
+
+You should get `{"status":"ok", ...}` and a list of 5 tools. If you don't, it's us — not you.
+
+**2. Do a full handshake by hand**
+
+```bash
+curl -sD - https://cineconcerts.digital/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"1"}}}'
+```
+
+A working server replies `200` with an `mcp-session-id` header.
+
+**3. Still `failed_to_load` or 0 tools?**
+
+Almost always the client config, not the connection. Check the snippet for your
+client above — key names differ (`url` vs `serverUrl`, `mcpServers` vs `servers`)
+and a couple of clients need an explicit transport `type` or they quietly fall
+back to the wrong protocol. If it's still failing,
+[open an issue](https://github.com/aaldere1/cineconcerts-mcp/issues) with your
+client name and version.
+
+Contributors can replay every known client request shape against any deployment:
+
+```bash
+./scripts/client-matrix.sh https://cineconcerts.digital/mcp   # 17 request shapes
+node scripts/verify-client.mjs https://cineconcerts.digital/mcp   # real MCP SDK client
+```
 
 ---
 
