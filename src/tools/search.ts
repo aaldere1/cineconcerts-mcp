@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { searchEvents, formatEvent } from "../services/algolia.js";
+import {
+  searchEvents,
+  formatEvent,
+  toStructuredShows,
+} from "../services/algolia.js";
 
 export function registerSearchTool(server: McpServer) {
   server.registerTool(
@@ -8,7 +12,7 @@ export function registerSearchTool(server: McpServer) {
     {
       title: "Search Shows",
       description:
-        "Search for upcoming CineConcerts film-concert events by keyword (film title, city, venue, etc.)",
+        "Use this when the user wants to search upcoming CineConcerts events by keyword such as film title, city, or venue.",
       inputSchema: {
         query: z
           .string()
@@ -25,9 +29,15 @@ export function registerSearchTool(server: McpServer) {
     },
     async ({ query }) => {
       const hits = await searchEvents(query);
+      const shows = toStructuredShows(hits);
 
       if (!hits.length) {
         return {
+          structuredContent: {
+            query,
+            total: 0,
+            shows: [],
+          },
           content: [
             {
               type: "text" as const,
@@ -39,6 +49,11 @@ export function registerSearchTool(server: McpServer) {
 
       const text = hits.map(formatEvent).join("\n\n---\n\n");
       return {
+        structuredContent: {
+          query,
+          total: shows.length,
+          shows,
+        },
         content: [
           {
             type: "text" as const,

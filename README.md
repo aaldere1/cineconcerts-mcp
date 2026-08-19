@@ -292,7 +292,7 @@ mcpServers:
 
 ## 🛠 Tools
 
-Four read-only tools. Your AI picks the right one automatically from your question.
+Five read-only tools. Your AI picks the right one automatically from your question.
 
 | Tool | What it does | Parameters |
 |------|--------------|------------|
@@ -300,6 +300,7 @@ Four read-only tools. Your AI picks the right one automatically from your questi
 | 📍 **`find_nearby_shows`** | Find shows near a place — city, address, or landmark | `location` *(string, required)*, `radius_km` *(number, default 500)* |
 | 📅 **`list_upcoming_shows`** | Browse everything coming up | `limit` *(number, default 20, max 60)* |
 | 🎟 **`get_show_details`** | Full details for one show by its code | `show_code` *(string, required)* |
+| 🖼 **`render_upcoming_shows_widget`** | Render already-fetched shows as a visual widget | `shows` *(array, required)*, `title` *(string)*, `source` *(string)* |
 
 ### Example prompts
 
@@ -318,6 +319,25 @@ Four read-only tools. Your AI picks the right one automatically from your questi
 🎟  "Get details for show HP3"
 🎟  "Tell me about HP8"
 ```
+
+### `render_upcoming_shows_widget`
+
+Renders the shows you just fetched as a visual card list, for clients that
+support MCP UI resources (such as the ChatGPT Apps SDK).
+
+```
+🖼  "Render the search results as a widget"
+🖼  "Show these nearby events in UI"
+```
+
+It deliberately does **not** fetch anything itself — data and presentation stay
+separate. Two steps:
+
+1. Call a data tool (`search_shows`, `find_nearby_shows`, or `list_upcoming_shows`).
+2. Pass that tool's `structuredContent.shows` straight into `render_upcoming_shows_widget`.
+
+All four data tools now return `structuredContent` alongside their text, so the
+hand-off needs no reshaping.
 
 ---
 

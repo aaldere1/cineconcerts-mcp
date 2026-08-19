@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { findByShowCode, formatEvent } from "../services/algolia.js";
+import { findByShowCode, toStructuredShow } from "../services/algolia.js";
 
 export function registerDetailsTool(server: McpServer) {
   server.registerTool(
@@ -8,7 +8,7 @@ export function registerDetailsTool(server: McpServer) {
     {
       title: "Get Show Details",
       description:
-        "Get full details for a specific CineConcerts show by its show code",
+        "Use this when the user asks for complete details about a specific CineConcerts show code.",
       inputSchema: {
         show_code: z
           .string()
@@ -26,6 +26,11 @@ export function registerDetailsTool(server: McpServer) {
 
       if (!hit) {
         return {
+          structuredContent: {
+            showCode: show_code,
+            show: null,
+            rawFields: null,
+          },
           content: [
             {
               type: "text" as const,
@@ -35,16 +40,21 @@ export function registerDetailsTool(server: McpServer) {
         };
       }
 
+      const rawFields = Object.fromEntries(
+        Object.entries(hit).filter(([k]) => !k.startsWith("_") && k !== "objectID")
+      );
+
       // Return all available fields for the detail view
-      const allFields = Object.entries(hit)
-        .filter(
-          ([k]) =>
-            !k.startsWith("_") && k !== "objectID"
-        )
+      const allFields = Object.entries(rawFields)
         .map(([k, v]) => `**${k}**: ${v}`)
         .join("\n");
 
       return {
+        structuredContent: {
+          showCode: show_code,
+          show: toStructuredShow(hit),
+          rawFields,
+        },
         content: [
           {
             type: "text" as const,
