@@ -49,10 +49,6 @@ const limiter = rateLimit({
   limit: 60,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  keyGenerator: (req) =>
-    req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
-    req.ip ||
-    "unknown",
   message: {
     jsonrpc: "2.0",
     error: { code: -32000, message: "Rate limit exceeded. Try again shortly." },
@@ -79,6 +75,9 @@ function createServer(): McpServer {
 // --- Express app ---
 
 const app = express();
+// One trusted hop: nginx on 127.0.0.1. Makes req.ip the address nginx appended
+// to X-Forwarded-For rather than anything the client put there itself.
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cors({ exposedHeaders: ["Mcp-Session-Id"], origin: "*" }));
 
