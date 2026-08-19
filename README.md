@@ -18,6 +18,8 @@ https://cineconcerts.digital/mcp/
 
 **No API key. No signup. No config file required.** Just connect and start asking.
 
+<sub>Both `…/mcp` and `…/mcp/` work. If your client reports `failed_to_load` or 0 tools, it must accept **both** `application/json` and `text/event-stream` — that is required by the Streamable HTTP transport, and a client sending only `application/json` gets a 406.</sub>
+
 </div>
 
 ---
