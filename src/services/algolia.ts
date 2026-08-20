@@ -1,11 +1,28 @@
 import { algoliasearch } from "algoliasearch";
 
-const client = algoliasearch(
-  process.env.ALGOLIA_APP_ID!,
-  process.env.ALGOLIA_API_KEY!
-);
-
 const INDEX = "knack_events";
+
+/**
+ * Built on first use rather than at import.
+ *
+ * Constructing it at module scope meant importing this file at all required
+ * credentials — so the pure mapping functions below could not be exercised
+ * without them, and any test of them had to reach the network to load. The
+ * cost of deferring is one branch per call.
+ */
+let client: ReturnType<typeof algoliasearch> | null = null;
+
+function getClient(): ReturnType<typeof algoliasearch> {
+  if (!client) {
+    const appId = process.env.ALGOLIA_APP_ID;
+    const apiKey = process.env.ALGOLIA_API_KEY;
+    if (!appId || !apiKey) {
+      throw new Error("Algolia is not configured (ALGOLIA_APP_ID / ALGOLIA_API_KEY).");
+    }
+    client = algoliasearch(appId, apiKey);
+  }
+  return client;
+}
 
 export interface EventHit {
   objectID: string;
@@ -101,7 +118,7 @@ export function formatEvent(hit: EventHit): string {
 }
 
 export async function searchEvents(query: string): Promise<EventHit[]> {
-  const { hits } = await client.searchSingleIndex<EventHit>({
+  const { hits } = await getClient().searchSingleIndex<EventHit>({
     indexName: INDEX,
     searchParams: { query, hitsPerPage: 20 },
   });
@@ -113,7 +130,7 @@ export async function geoSearchEvents(
   lng: number,
   radiusMeters: number
 ): Promise<EventHit[]> {
-  const { hits } = await client.searchSingleIndex<EventHit>({
+  const { hits } = await getClient().searchSingleIndex<EventHit>({
     indexName: INDEX,
     searchParams: {
       query: "",
@@ -126,7 +143,7 @@ export async function geoSearchEvents(
 }
 
 export async function browseAllEvents(limit: number): Promise<EventHit[]> {
-  const { hits } = await client.searchSingleIndex<EventHit>({
+  const { hits } = await getClient().searchSingleIndex<EventHit>({
     indexName: INDEX,
     searchParams: { query: "", hitsPerPage: limit },
   });
@@ -136,7 +153,7 @@ export async function browseAllEvents(limit: number): Promise<EventHit[]> {
 export async function findByShowCode(
   showCode: string
 ): Promise<EventHit | null> {
-  const { hits } = await client.searchSingleIndex<EventHit>({
+  const { hits } = await getClient().searchSingleIndex<EventHit>({
     indexName: INDEX,
     searchParams: {
       query: showCode,

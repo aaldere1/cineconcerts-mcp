@@ -499,3 +499,25 @@ You're sending more than 60 requests/minute from one IP. Back off briefly — th
 *Find your next show. Just ask your AI.*
 
 </div>
+
+## Tests
+
+```bash
+npm test           # everything — spawns the server, needs .env for the tool checks
+npm run test:unit  # pure logic only, no credentials, instant
+```
+
+25 tests:
+
+- **`tests/unit.test.ts`** — show mapping, and the widget's URL guard. The guard
+  runs in the browser, so it is lifted out of the widget source and exercised
+  directly: `shows[]` arrives from the model rather than straight from Algolia,
+  so a manipulated tool call could otherwise put `javascript:` on an href.
+- **`tests/http.test.ts`** — the built server in a spawned process over real
+  HTTP. All three MCP paths (`/`, `/mcp`, `/mcp/`), the client-quirk header
+  matrix, every tool returning real data, and a check that the README documents
+  every registered tool.
+
+A trailing slash once 301'd here, turning a client's POST into a GET, and it
+presented as `failed_to_load, 0 tools`. That is why routing is asserted rather
+than assumed.
