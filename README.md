@@ -84,6 +84,7 @@ Your assistant turns that into a clean, conversational answer — with live link
 - [How it works](#-how-it-works)
 - [Events catalog](#-events-catalog)
 - [FAQ](#-faq)
+- [About CineConcerts](#-about-cineconcerts)
 - [License](#-license)
 
 ---
@@ -431,7 +432,7 @@ node scripts/verify-client.mjs https://cineconcerts.digital/mcp   # real MCP SDK
   Your AI client                CineConcerts MCP                   Data sources
  ┌──────────────┐   MCP /    ┌───────────────────┐   query    ┌────────────────────┐
  │ Claude /     │  Streamable│  Express server    │──────────► │ Algolia (live      │
- │ ChatGPT /    │◄──HTTP────►│  4 read-only tools │            │ event index)       │
+ │ ChatGPT /    │◄──HTTP────►│  5 read-only tools │            │ event index)       │
  │ Cursor / ... │  JSON-RPC  │  rate-limited      │──────────► │ Nominatim (geocode)│
  └──────────────┘            └───────────────────┘            └────────────────────┘
 ```
@@ -448,17 +449,21 @@ All data is **public and read-only**. The server is just an AI-friendly window o
 
 ## 🎞 Events catalog
 
-~60 active events at any time, refreshed live. Currently touring:
+Live Algolia catalog of currently on-sale events (typically dozens at a time); full company history spans **4,379** performances across **491** venues in **55** countries (Ragic performance tracking, as of Sep 16, 2026).
 
-- 🦉 **Harry Potter** — all 8 films, in concert
-- 🎩 **The Godfather**
-- ⚔️ **Gladiator**
-- 💎 **Breakfast at Tiffany's**
-- 🎄 **Elf** · **The Polar Express** · **It's a Wonderful Life**
-- 🐉 **DreamWorks Animation** in Concert
-- 🏈 **Rudy**
-- 🏹 **Brave**
-- …and more
+Active and historical titles include:
+
+- 🦉 **Harry Potter** — all 8 films in concert (Philosopher's/Sorcerer's Stone, Chamber of Secrets, Prisoner of Azkaban, Goblet of Fire, Order of the Phoenix, Half-Blood Prince, Deathly Hallows – Part 1, Deathly Hallows – Part 2)
+- 🎄 **Elf in Concert**
+- ⚔️ **Gladiator in Concert**
+- 🎩 **The Godfather Live**
+- 🐉 **DreamWorks Animation in Concert**
+- 🚂 **The Polar Express in Concert**
+- 🔔 **It's a Wonderful Life in Concert**
+- 💎 **Breakfast at Tiffany's in Concert**
+- 🏈 **Rudy in Concert**
+- 🖖 **Star Trek: The Ultimate Voyage** *(historical)*
+- …and more *(including historical titles such as The Da Vinci Code and The Passion of the Christ)*
 
 ---
 
@@ -480,7 +485,7 @@ Almost certainly. Any client that speaks MCP over Streamable HTTP can connect us
 Live. It queries the production event index directly, so what you see is what's on sale right now.
 
 **Why am I getting rate-limited?**
-You're sending more than 60 requests/minute from one IP. Back off briefly — the `RateLimit` response headers tell you exactly when to retry.
+You're sending more than 240 requests/minute from one IP. Back off briefly — the `RateLimit` response headers tell you exactly when to retry.
 
 ---
 
@@ -492,7 +497,16 @@ You're sending more than 60 requests/minute from one IP. Back off briefly — th
 
 ## 🎼 About CineConcerts
 
-[CineConcerts](https://www.cineconcerts.com) produces film-concert experiences worldwide: a full symphony orchestra performs a film's entire score, live to picture, on a giant screen. Since 2016, CineConcerts has staged **1,500+ shows across 48 countries** for over **3 million fans**.
+[CineConcerts](https://www.cineconcerts.com) produces film-concert experiences worldwide: a full symphony orchestra performs a film's entire score, live to picture, on a giant screen. As of Sep 16, 2026, Ragic performance tracking shows **4,379+** performances across **491** venues in **55** countries, with **6.6M+** tickets sold (where reported in Ragic).
+
+| | All-time (Ragic, Sep 16, 2026) |
+|---|---|
+| **Performances** | 4,379 |
+| **Venues** | 491 |
+| **Countries** | 55 |
+| **Tickets sold** | 6,640,879 of 9,087,863 seats (~73.1% on performances with sales reported) |
+
+1,049 performances carry no sales figure and are excluded from sold totals. The upcoming book on the same date: **117** engagements · **315** performances; ~438,786 seats capacity where sales reported (36.1% sold on those).
 
 <div align="center">
 
