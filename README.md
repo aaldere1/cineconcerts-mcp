@@ -431,16 +431,16 @@ node scripts/verify-client.mjs https://cineconcerts.digital/mcp   # real MCP SDK
 ```
   Your AI client                CineConcerts MCP                   Data sources
  ┌──────────────┐   MCP /    ┌───────────────────┐   query    ┌────────────────────┐
- │ Claude /     │  Streamable│  Express server    │──────────► │ Algolia (live      │
- │ ChatGPT /    │◄──HTTP────►│  5 read-only tools │            │ event index)       │
- │ Cursor / ... │  JSON-RPC  │  rate-limited      │──────────► │ Nominatim (geocode)│
+ │ Claude /     │  Streamable│  Express server    │──────────► │ Live event catalog │
+ │ ChatGPT /    │◄──HTTP────►│  5 read-only tools │            │                    │
+ │ Cursor / ... │  JSON-RPC  │  rate-limited      │──────────► │ Geocoding          │
  └──────────────┘            └───────────────────┘            └────────────────────┘
 ```
 
 - **Transport:** [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports) — the modern MCP transport, with proper session management and SSE notifications.
 - **Stack:** TypeScript · Express · the [official MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk) · `express-rate-limit`.
-- **Event data:** Algolia-backed search over the same public catalog that powers [cineconcerts.com](https://www.cineconcerts.com), the mobile app, and the interactive map.
-- **Location search:** [Nominatim](https://nominatim.openstreetmap.org/) (OpenStreetMap) geocoding turns "near Tokyo Tower" into coordinates, then does a radius search.
+- **Event data:** live event catalog — the same public catalog that powers [cineconcerts.com](https://www.cineconcerts.com), the mobile app, and the interactive map.
+- **Location search:** OpenStreetMap geocoding turns "near Tokyo Tower" into coordinates, then does a radius search.
 - **Health check:** `GET /health` returns server status, version, active session count, and the tool list — handy for uptime monitoring.
 
 All data is **public and read-only**. The server is just an AI-friendly window onto it.
@@ -449,7 +449,7 @@ All data is **public and read-only**. The server is just an AI-friendly window o
 
 ## 🎞 Events catalog
 
-Live Algolia catalog of currently on-sale events (typically dozens at a time); full company history spans **4,379** performances across **491** venues in **55** countries (Ragic performance tracking, as of Sep 16, 2026).
+Live event catalog of currently on-sale events (typically dozens at a time) — the same public catalog that powers [cineconcerts.com](https://www.cineconcerts.com). Full company history spans **4,379** performances across **491** venues in **55** countries (as of Sep 16, 2026).
 
 Active and historical titles include:
 
@@ -497,9 +497,9 @@ You're sending more than 240 requests/minute from one IP. Back off briefly — t
 
 ## 🎼 About CineConcerts
 
-[CineConcerts](https://www.cineconcerts.com) produces film-concert experiences worldwide: a full symphony orchestra performs a film's entire score, live to picture, on a giant screen. As of Sep 16, 2026, Ragic performance tracking shows **4,379+** performances across **491** venues in **55** countries, with **6.6M+** tickets sold (where reported in Ragic).
+[CineConcerts](https://www.cineconcerts.com) produces film-concert experiences worldwide: a full symphony orchestra performs a film's entire score, live to picture, on a giant screen. As of Sep 16, 2026, company records show **4,379+** performances across **491** venues in **55** countries, with **6.6M+** tickets sold (where reported in performance history).
 
-| | All-time (Ragic, Sep 16, 2026) |
+| | All-time (as of Sep 16, 2026) |
 |---|---|
 | **Performances** | 4,379 |
 | **Venues** | 491 |
@@ -525,8 +525,9 @@ npm run test:unit  # pure logic only, no credentials, instant
 
 - **`tests/unit.test.ts`** — show mapping, and the widget's URL guard. The guard
   runs in the browser, so it is lifted out of the widget source and exercised
-  directly: `shows[]` arrives from the model rather than straight from Algolia,
-  so a manipulated tool call could otherwise put `javascript:` on an href.
+  directly: `shows[]` arrives from the model rather than straight from the
+  live event catalog, so a manipulated tool call could otherwise put
+  `javascript:` on an href.
 - **`tests/http.test.ts`** — the built server in a spawned process over real
   HTTP. All three MCP paths (`/`, `/mcp`, `/mcp/`), the client-quirk header
   matrix, every tool returning real data, and a check that the README documents
