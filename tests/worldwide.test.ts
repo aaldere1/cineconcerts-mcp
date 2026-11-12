@@ -28,6 +28,31 @@ const HITS: EventHit[] = [...GENERATED, ...SPECIFIC];
 const ids = (opts: Parameters<typeof filterSchedule>[1]): string[] =>
   filterSchedule(HITS, opts).hits.map((h) => h.objectID);
 
+const REGION: EventHit[] = [
+  { objectID: 'au', City: 'Sydney (NSW)', Country: 'AU' },
+  { objectID: 'ca', City: 'Toronto (ON)', Country: 'Canada' },
+  { objectID: 'fr', City: 'Paris (TX)', Country: 'FR' },
+  { objectID: 'frs', City: 'Paris (TX)', Country: 'France', State: 'TX' },
+  { objectID: 'gb', City: 'Sydney (NSW)', Country: 'GB' },
+  { objectID: 'gb2', City: 'Sydney', Country: 'United Kingdom' },
+  { objectID: 'lon', City: 'London (ON)', Country: 'GB' },
+];
+const IDF: EventHit[] = [
+  { objectID: 'idf', City: 'Paris (IDF)', Country: 'France', State: 'IDF' },
+  { objectID: 'par', City: 'Paris', Country: 'France' },
+  { objectID: 'tx', City: 'Paris (TX)', Country: 'US', State: 'TX' },
+];
+
+/** All matching IDs across every page. */
+const allIds = (rows: readonly EventHit[], opts: Parameters<typeof filterSchedule>[1]): string[] => {
+  const out: string[] = [];
+  for (let page = 0; ; page++) {
+    const r = filterSchedule(rows, { ...opts, page, pageSize: 60 });
+    out.push(...r.hits.map((h) => h.objectID));
+    if (!r.hasMore) return out;
+  }
+};
+
 test('parseEventDates handles singles, ranges, leap years and impossible dates', () => {
   assert.deepEqual(parseEventDates('03/01/2025'), { startDate: '2025-03-01', endDate: '2025-03-01' });
   assert.deepEqual(parseEventDates('12/30/2024 to 01/02/2025'), { startDate: '2024-12-30', endDate: '2025-01-02' });
@@ -48,34 +73,54 @@ test('parseEventDates keeps single-digit US dates and hyphen ranges', () => {
 });
 
 test('city region suffix is stripped only for the country (or matching State), never inferred', () => {
-  const region: EventHit[] = [
-    { objectID: 'au', City: 'Sydney (NSW)', Country: 'AU' },
-    { objectID: 'ca', City: 'Toronto (ON)', Country: 'Canada' },
-    { objectID: 'fr', City: 'Paris (TX)', Country: 'FR' },
-    { objectID: 'frs', City: 'Paris (TX)', Country: 'France', State: 'TX' },
-    { objectID: 'gb', City: 'Sydney (NSW)', Country: 'GB' },
-    { objectID: 'gb2', City: 'Sydney', Country: 'United Kingdom' },
-    { objectID: 'lon', City: 'London (ON)', Country: 'GB' },
-  ];
-  const snapshot = structuredClone(region);
+  const snapshot = structuredClone(REGION);
   const rids = (opts: Parameters<typeof filterSchedule>[1]): string[] =>
-    filterSchedule(region, opts).hits.map((h) => h.objectID);
+    filterSchedule(REGION, opts).hits.map((h) => h.objectID);
   assert.deepEqual(rids({ city: 'Sydney', country: 'AU' }), ['au']);
   assert.deepEqual(rids({ city: 'Sydney (NSW)', country: 'Australia' }), ['au']);
   assert.deepEqual(rids({ city: 'Sydney', country: 'GB' }), ['gb2']);
   assert.deepEqual(rids({ city: 'Sydney (NSW)', country: 'GB' }), ['gb']);
-  assert.deepEqual(rids({ city: 'Sydney (NSW)' }), ['au', 'gb2']);
+  // Exact full City across an unrecognized foreign suffix still matches its own row, never a bare one.
+  assert.deepEqual(rids({ city: 'Sydney (NSW)' }), ['au', 'gb']);
+  assert.deepEqual(rids({ city: 'London (ON)' }), ['lon']);
   assert.deepEqual(rids({ city: 'Toronto', country: 'CA' }), ['ca']);
   assert.deepEqual(rids({ city: 'Toronto (ON)', country: 'Canada' }), ['ca']);
   assert.deepEqual(rids({ city: 'Toronto' }), ['ca']);
   assert.deepEqual(rids({ city: 'Paris', country: 'FR' }), ['frs']);
-  assert.deepEqual(rids({ city: 'Paris (TX)', country: 'FR' }), ['fr']);
+  assert.deepEqual(rids({ city: 'Paris (TX)', country: 'FR' }), ['fr', 'frs']);
+  assert.deepEqual(rids({ city: 'Paris (TX)' }), ['fr', 'frs']);
   assert.deepEqual(rids({ city: 'London', country: 'GB' }), []);
   assert.deepEqual(rids({ city: 'London (ON)', country: 'GB' }), ['lon']);
-  assert.deepEqual(region, snapshot);
+  // A region code of another country must not broaden to the bare city.
+  assert.deepEqual(rids({ city: 'Sydney (ON)' }), []);
+  assert.deepEqual(rids({ city: 'Toronto (NSW)' }), []);
+  assert.deepEqual(REGION, snapshot);
   assert.deepEqual(ids({ city: 'Davenport', country: 'US' }), ['d1']);
   assert.deepEqual(ids({ city: 'Davenport (IA)', country: 'United States' }), ['d1']);
   assert.deepEqual(ids({ city: 'Davenport (IA)', country: 'Australia' }), []);
+  assert.deepEqual(ids({ city: 'Paris (TX)' }), []);
+});
+
+test('State fallback applies to the query city too: exact full City and base city both match', () => {
+  const iids = (opts: Parameters<typeof filterSchedule>[1]): string[] =>
+    filterSchedule(IDF, opts).hits.map((h) => h.objectID);
+  assert.deepEqual(iids({ city: 'Paris (IDF)', country: 'FR' }), ['idf']);
+  assert.deepEqual(iids({ city: 'Paris (IDF)', country: 'France' }), ['idf']);
+  assert.deepEqual(iids({ city: 'Paris (IDF)' }), ['idf']);
+  assert.deepEqual(iids({ city: 'Paris', country: 'FR' }), ['idf', 'par']);
+  assert.deepEqual(iids({ city: 'Paris' }), ['idf', 'par', 'tx']);
+  assert.deepEqual(iids({ city: 'Paris (TX)' }), ['tx']);
+  // Invalid cross-country region: no State/country rule strips it, so nothing broadens.
+  assert.deepEqual(iids({ city: 'Paris (TX)', country: 'FR' }), []);
+  assert.deepEqual(iids({ city: 'Paris (IDF)', country: 'US' }), []);
+});
+
+test('every fixture row is found by its own City and Country', () => {
+  for (const rows of [HITS, REGION, IDF]) {
+    for (const h of rows) {
+      assert.ok(allIds(rows, { city: h.City, country: h.Country }).includes(h.objectID), h.objectID);
+    }
+  }
 });
 
 test('scheduleDigest is order-independent, tracks public data and does not mutate input', () => {

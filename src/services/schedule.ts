@@ -162,14 +162,19 @@ export function filterSchedule(hits: readonly EventHit[], options: ScheduleOptio
   const rawCity = textOption('city', options.city);
   const rawCountry = textOption('country', options.country);
   const query = rawQuery === undefined ? undefined : normalizeText(rawQuery);
-  const city = rawCity === undefined ? undefined : cityKey(rawCity, rawCountry);
   const country = rawCountry === undefined ? undefined : countryKey(rawCountry);
   const hasDateFilter = dateFrom !== undefined || dateTo !== undefined;
 
   const matched: { hit: EventHit; id: string; start: string | null }[] = [];
   let unknownDateCount = 0;
   for (const hit of hits) {
-    if (city !== undefined && cityKey(text(hit.City), text(hit.Country), text(hit.State)) !== city) continue;
+    if (rawCity !== undefined) {
+      // Normalize the query city per row with the row's State and the explicit country (else the row's),
+      // so an exact full City matches the same row its State fallback strips.
+      const state = text(hit.State);
+      const rowCity = cityKey(text(hit.City), text(hit.Country), state);
+      if (rowCity !== cityKey(rawCity, rawCountry ?? text(hit.Country), state)) continue;
+    }
     if (country !== undefined && countryKey(text(hit.Country)) !== country) continue;
     if (query !== undefined && !QUERY_FIELDS.some((f) => normalizeText(text(hit[f])).includes(query))) continue;
     const { startDate, endDate } = parseEventDates(hit['Event Date']);
