@@ -42,6 +42,13 @@ const IDF: EventHit[] = [
   { objectID: 'par', City: 'Paris', Country: 'France' },
   { objectID: 'tx', City: 'Paris (TX)', Country: 'US', State: 'TX' },
 ];
+const IDF_CASE: EventHit[] = [
+  { objectID: 'lc', City: 'Paris (idf)', Country: 'France', State: 'idf' },
+  { objectID: 'ls', City: 'Paris (IDF)', Country: 'France', State: ' idf ' },
+  { objectID: 'lsuf', City: 'Paris (idf)', Country: 'France', State: 'IDF' },
+  { objectID: 'up', City: 'Paris (IDF)', Country: 'France', State: 'IDF' },
+  { objectID: 'tx', City: 'Paris (TX)', Country: 'US', State: 'TX' },
+];
 
 /** All matching IDs across every page. */
 const allIds = (rows: readonly EventHit[], opts: Parameters<typeof filterSchedule>[1]): string[] => {
@@ -115,10 +122,38 @@ test('State fallback applies to the query city too: exact full City and base cit
   assert.deepEqual(iids({ city: 'Paris (IDF)', country: 'US' }), []);
 });
 
-test('every fixture row is found by its own City and Country', () => {
-  for (const rows of [HITS, REGION, IDF]) {
+test('State fallback is case-insensitive and tolerates whitespace inside the parentheses', () => {
+  const cids = (opts: Parameters<typeof filterSchedule>[1]): string[] =>
+    filterSchedule(IDF_CASE, opts).hits.map((h) => h.objectID);
+  const snapshot = structuredClone(IDF_CASE);
+  const france = ['lc', 'ls', 'lsuf', 'up'];
+  for (const city of ['Paris (IDF)', 'paris (idf)', 'PARIS (IDF)', 'Paris( idf )', 'Paris(IDF)', 'Paris']) {
+    for (const country of ['FR', 'fr', 'France', 'FRANCE']) {
+      assert.deepEqual(cids({ city, country }), france, `${city} / ${country}`);
+    }
+  }
+  for (const city of ['paris (idf)', 'PARIS (IDF)', 'Paris( idf )']) assert.deepEqual(cids({ city }), france, city);
+  assert.deepEqual(cids({ city: 'paris' }), ['lc', 'ls', 'lsuf', 'tx', 'up']);
+  assert.deepEqual(cids({ city: 'paris (tx)' }), ['tx']);
+  assert.deepEqual(cids({ city: 'Paris( tx )', country: 'us' }), ['tx']);
+  // Wrong country/region never broadens.
+  for (const country of ['US', 'us', 'United States']) {
+    for (const city of ['paris (idf)', 'PARIS (IDF)', 'Paris( idf )']) assert.deepEqual(cids({ city, country }), [], `${city} / ${country}`);
+  }
+  for (const city of ['paris (tx)', 'Paris( TX )']) assert.deepEqual(cids({ city, country: 'fr' }), [], city);
+  assert.deepEqual(cids({ city: 'paris (on)' }), []);
+  assert.deepEqual(IDF_CASE, snapshot);
+});
+
+test('every fixture row is found by its own City and Country in original, lower and upper case', () => {
+  const variants = [(s: string) => s, (s: string) => s.toLowerCase(), (s: string) => s.toUpperCase()];
+  for (const rows of [HITS, REGION, IDF, IDF_CASE]) {
     for (const h of rows) {
-      assert.ok(allIds(rows, { city: h.City, country: h.Country }).includes(h.objectID), h.objectID);
+      for (const v of variants) {
+        const city = v(h.City ?? '');
+        const country = v(h.Country ?? '');
+        assert.ok(allIds(rows, { city, country }).includes(h.objectID), `${h.objectID}: ${city} / ${country}`);
+      }
     }
   }
 });

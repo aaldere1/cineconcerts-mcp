@@ -72,15 +72,15 @@ export function normalizeText(value: string): string {
 
 /**
  * Normalized city with a trailing "(XX)" region suffix removed only when XX is a state/province of the
- * given country (any US/AU/CA region when no country is given), or exactly equals the given State field.
- * The country is never inferred from the city; any other suffix is kept.
+ * given country (any US/AU/CA region when no country is given), or equals the trimmed State field
+ * (codes compare uppercased). The country is never inferred from the city; any other suffix is kept.
  */
 function cityKey(city: string, country?: string, state?: string): string {
-  const m = /^(.*?\S)\s*\(([A-Za-z]{2,3})\)\s*$/.exec(city);
+  const m = /^(.*?\S)\s*\(\s*([A-Za-z]{2,3})\s*\)\s*$/.exec(city);
   if (!m) return normalizeText(city);
-  const code = m[2]!;
+  const code = m[2]!.toUpperCase();
   const codes = country?.trim() ? REGION_CODES.get(countryKey(country)) : ANY_REGION_CODES;
-  const strip = codes?.has(code.toUpperCase()) || (/^[A-Z]{2,3}$/.test(code) && state?.trim() === code);
+  const strip = codes?.has(code) || state?.trim().toUpperCase() === code;
   return normalizeText(strip ? m[1]! : city);
 }
 
