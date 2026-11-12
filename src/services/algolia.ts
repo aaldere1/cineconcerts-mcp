@@ -1,4 +1,11 @@
+import { createHash } from "node:crypto";
 import { algoliasearch } from "algoliasearch";
+import {
+  loadCompleteInventory,
+  INVENTORY_PAGE_SIZE,
+  type CompleteInventory,
+} from "./inventory.js";
+import { parseEventDates } from "./schedule.js";
 
 const INDEX = "knack_events";
 
@@ -46,6 +53,8 @@ export interface StructuredShow {
   id: string;
   title: string;
   eventDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
   showCode: string | null;
   venue: string | null;
   city: string | null;
@@ -73,6 +82,7 @@ export function toStructuredShow(hit: EventHit): StructuredShow {
   const city = toNullableString(hit.City);
   const state = toNullableString(hit.State);
   const country = toNullableString(hit.Country);
+  const { startDate, endDate } = parseEventDates(hit["Event Date"]);
   const locationParts = [venue, city, state, country].filter(
     (part): part is string => Boolean(part)
   );
@@ -81,6 +91,8 @@ export function toStructuredShow(hit: EventHit): StructuredShow {
     id: hit.objectID,
     title: toNullableString(hit.Title) || "CineConcerts Event",
     eventDate: toNullableString(hit["Event Date"]),
+    startDate,
+    endDate,
     showCode: toNullableString(hit["Show Code"]),
     venue,
     city,
@@ -148,6 +160,37 @@ export async function browseAllEvents(limit: number): Promise<EventHit[]> {
     searchParams: { query: "", hitsPerPage: limit },
   });
   return hits;
+}
+
+/**
+ * SHA-256 (hex) of the public structured shows, ordered by objectID. Ignores
+ * fetch order and fetchedAt, so paginated consumers can detect source changes
+ * between requests. Does not mutate `hits`.
+ */
+export function scheduleDigest(hits: readonly EventHit[]): string {
+  const sorted = [...hits].sort((a, b) =>
+    a.objectID < b.objectID ? -1 : a.objectID > b.objectID ? 1 : 0
+  );
+  return createHash("sha256")
+    .update(JSON.stringify(toStructuredShows(sorted)))
+    .digest("hex");
+}
+
+/**
+ * The whole published inventory, read page by page through ordinary search
+ * (query "", 100 per page). Rejects instead of returning a partial list.
+ */
+export async function fetchCompleteEvents(): Promise<
+  CompleteInventory<EventHit> & { sourceDigest: string }
+> {
+  const searchClient = getClient();
+  const inventory = await loadCompleteInventory<EventHit>((page) =>
+    searchClient.searchSingleIndex<EventHit>({
+      indexName: INDEX,
+      searchParams: { query: "", hitsPerPage: INVENTORY_PAGE_SIZE, page },
+    })
+  );
+  return { ...inventory, sourceDigest: scheduleDigest(inventory.hits) };
 }
 
 export async function findByShowCode(
