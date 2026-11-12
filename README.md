@@ -308,9 +308,14 @@ Five read-only tools. Your AI picks the right one automatically from your questi
 
 | Tool | What it does | Parameters |
 |------|--------------|------------|
-| 🔍 **`search_shows`** | Search by keyword — film title, city, venue, anything | `query` *(string, required)* |
+| 🔍 **`search_shows`** | Search published shows with exact location/date filters | `query` *(optional keyword)*; optional `city`, `country`, `dateFrom`, `dateTo`, `page`, `pageSize` |
 | 📍 **`find_nearby_shows`** | Find shows near a place — city, address, or landmark | `location` *(string, required)*, `radius_km` *(number, default 500)* |
-| 📅 **`list_upcoming_shows`** | Browse everything coming up | `limit` *(number, default 20, max 60)* |
+| 📅 **`list_upcoming_shows`** | Page through the complete published catalog | `limit` *(default 20, max 60)*; optional `page`, `pageSize`, `city`, `country`, `dateFrom`, `dateTo` |
+
+For exact city discovery, use structured fields, for example `{"city":"Paris","country":"FR","pageSize":8}`. `query` is a literal keyword; omit it for location-only searches. Date bounds use `YYYY-MM-DD`, match overlapping booking ranges inclusively, and exclude unknown dates. Returned `startDate` and `endDate` normalize the source's US month/day/year dates without changing `eventDate`.
+
+Search and list responses include `total`, zero-based `page`, `pageSize`, `hasMore`, `sourceTotal`, `sourceURL`, `sourceDigest`, `fetchedAt` and `coverage`. Read the next page while `hasMore` is true; when combining pages, require the same digest and total. The page size limits each response, rather than silently limiting the full catalog. The server verifies all source pages, up to 1,000 published listings; a failed, inconsistent or oversized read returns `coverage: "unavailable"` and `isError`, never a false empty catalog. `fetchedAt` is retrieval time. An empty successful search means no matching **currently published** listing.
+
 | 🎟 **`get_show_details`** | Full details for one show by its code | `show_code` *(string, required)* |
 | 🖼 **`render_upcoming_shows_widget`** | Render already-fetched shows as a visual widget | `shows` *(array, required)*, `title` *(string)*, `source` *(string)* |
 
